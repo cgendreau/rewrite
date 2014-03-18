@@ -32,7 +32,9 @@ import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ocpsoft.common.util.Streams;
@@ -52,6 +54,8 @@ public class JoinEncodingConfigurationTest extends RewriteTest
    {
       return RewriteTest.getDeployment()
                .addPackages(true, ConfigRoot.class.getPackage())
+               .addAsWebResource(new StringAsset("found no space"), "record/recordnospace")
+               .addAsWebResource(new StringAsset("found with space"), "record/record space")
                .addAsServiceProvider(ConfigurationProvider.class, JoinEncodingConfigurationProvider.class);
    }
 
@@ -172,10 +176,46 @@ public class JoinEncodingConfigurationTest extends RewriteTest
       assertThat(rewritten, is("/encoding/foo&bar"));
    }
 
+   @Test
+   public void testUrlMappingNoSpace() throws Exception
+   {
+      HttpAction<HttpGet> action = get("/record/recordnospace");
+      Assert.assertEquals(200, action.getResponse().getStatusLine().getStatusCode());
+      Assert.assertEquals("found no space", action.getResponseContent());
+   }
+
+   @Test
+   public void testUrlMappingNoSpaceUsingRewrite() throws Exception
+   {
+      HttpAction<HttpGet> action = get("/r/recordnospace");
+      Assert.assertEquals(200, action.getResponse().getStatusLine().getStatusCode());
+      Assert.assertEquals("found no space", action.getResponseContent());
+   }
+
+   @Test
+   public void testUrlMappingWithSpace() throws Exception
+   {
+      HttpAction<HttpGet> action = get("/record/record%20space");
+      Assert.assertEquals(200, action.getResponse().getStatusLine().getStatusCode());
+      Assert.assertEquals("found with space", action.getResponseContent());
+   }
+
+   /**
+    * Failing, would work using .addAsWebResource(new StringAsset("found with space"), "record/record%20space")
+    * 
+    * @throws Exception
+    */
+   @Test
+   public void testUrlMappingWithSpaceUsingRewrite() throws Exception
+   {
+      HttpAction<HttpGet> action = get("/r/record%20space");
+      Assert.assertEquals(200, action.getResponse().getStatusLine().getStatusCode());
+      Assert.assertEquals("found with space", action.getResponseContent());
+   }
+
    /*
     * Helper methods
     */
-
    private String post(String path, HttpEntity entity) throws IOException
    {
       HttpPost post = new HttpPost(getBaseURL() + getContextPath() + path);

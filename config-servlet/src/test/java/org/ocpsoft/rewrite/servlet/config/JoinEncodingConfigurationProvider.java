@@ -47,6 +47,11 @@ public class JoinEncodingConfigurationProvider extends HttpConfigurationProvider
                .addRule(Join.path("/encoding/{param}").to("/encoding.html").withInboundCorrection())
 
                /*
+                * Set up our /r/ rule
+                */
+               .addRule(Join.path("/r/{record}").to("/record/{record}"))
+
+               /*
                 * request to this URL will response with details about the requested (forwarded) URL and the query parameter
                 */
                .addRule()
